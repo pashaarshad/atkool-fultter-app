@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 
 class AuthService {
@@ -17,18 +17,19 @@ class AuthService {
     String deviceName = '';
 
     try {
-      if (Platform.isAndroid) {
+      if (kIsWeb) {
+        final webInfo = await deviceInfo.webBrowserInfo;
+        deviceId = webInfo.userAgent ?? 'browser';
+        deviceName = webInfo.browserName.toString();
+      } else {
+        // Safe for mobile
         final androidInfo = await deviceInfo.androidInfo;
         deviceId = androidInfo.id;
         deviceName = '${androidInfo.brand} ${androidInfo.model}';
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        deviceId = iosInfo.identifierForVendor ?? '';
-        deviceName = '${iosInfo.name} (${iosInfo.model})';
       }
     } catch (e) {
-      deviceId = 'unknown';
-      deviceName = 'Unknown Device';
+      deviceId = 'web-browser';
+      deviceName = 'Chrome/Edge';
     }
 
     return {'deviceId': deviceId, 'deviceName': deviceName};
