@@ -12,16 +12,16 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const SchoolConnectApp());
+  runApp(const ATKoolApp());
 }
 
-class SchoolConnectApp extends StatelessWidget {
-  const SchoolConnectApp({super.key});
+class ATKoolApp extends StatelessWidget {
+  const ATKoolApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'School Connect',
+      title: 'ATKool',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -110,38 +110,39 @@ class _SplashScreenState extends State<SplashScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 140,
+                      height: 140,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6B4EFF),
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6B4EFF).withAlpha(60),
+                            color: const Color(0xFF6B4EFF).withAlpha(40),
                             blurRadius: 30,
                             spreadRadius: 5,
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.school,
-                        size: 60,
-                        color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/logo.jpeg',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
                     const Text(
-                      'School Connect',
+                      'ATKool',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1A1A1A),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     const Text(
-                      'For Teachers & Parents',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                      'Learn | Grow | Succeed',
+                      style: TextStyle(fontSize: 13, color: Colors.grey, letterSpacing: 2),
                     ),
                     const SizedBox(height: 50),
                     const SizedBox(

@@ -341,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () {
                 showAboutDialog(
                   context: context,
-                  applicationName: 'School Connect',
+                  applicationName: 'ATKool',
                   applicationVersion: '1.0.0',
                   applicationIcon: const Icon(
                     Icons.school,
