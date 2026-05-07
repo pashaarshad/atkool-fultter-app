@@ -79,35 +79,41 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Logo
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6B4EFF),
-                    borderRadius: BorderRadius.circular(50),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6B4EFF).withAlpha(60),
+                        color: const Color(0xFF6B4EFF).withAlpha(40),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.school,
-                    size: 50,
-                    color: Colors.white,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/logo.jpeg',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // App Title
                 const Text(
-                  'School Connect',
+                  'ATKool',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1A1A1A),
                   ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Learn | Grow | Succeed',
+                  style: TextStyle(fontSize: 12, color: Colors.grey, letterSpacing: 1.5),
                 ),
                 const SizedBox(height: 8),
                 Text(
