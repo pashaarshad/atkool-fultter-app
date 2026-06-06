@@ -15,15 +15,19 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _teacherService = TeacherService();
 
   final _nameController = TextEditingController();
-  final _rollNoController = TextEditingController();
+  final _studentIdController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
   final _parentNameController = TextEditingController();
   final _parentMobileController = TextEditingController();
+  final _guardianMobileController = TextEditingController();
+  final _pickupPointController = TextEditingController();
   final _addressController = TextEditingController();
 
   String? _selectedClassSection;
   bool _isLoading = false;
+  List<dynamic> _vansList = [];
+  String? _selectedVanId;
 
   @override
   void initState() {
@@ -33,16 +37,28 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       final first = widget.classAssignments[0];
       _selectedClassSection = '${first['className']}-${first['section']}';
     }
+    _loadVans();
+  }
+
+  Future<void> _loadVans() async {
+    final result = await _teacherService.getVans();
+    if (result['success']) {
+      setState(() {
+        _vansList = result['data'] ?? [];
+      });
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _rollNoController.dispose();
+    _studentIdController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
     _parentNameController.dispose();
     _parentMobileController.dispose();
+    _guardianMobileController.dispose();
+    _pickupPointController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -71,11 +87,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       name: _nameController.text.trim(),
       className: className,
       section: section,
-      rollNo: _rollNoController.text.trim(),
+      studentId: _studentIdController.text.trim(),
       email: _emailController.text.trim(),
       mobileNo: _mobileController.text.trim(),
       parentName: _parentNameController.text.trim(),
       parentMobile: _parentMobileController.text.trim(),
+      guardianMobile: _guardianMobileController.text.trim(),
+      vanId: _selectedVanId,
+      pickupPoint: _pickupPointController.text.trim(),
       address: _addressController.text.trim(),
     );
 
@@ -156,8 +175,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               const SizedBox(height: 12),
 
               _buildTextField(
-                controller: _rollNoController,
-                label: 'Roll No',
+                controller: _studentIdController,
+                label: 'Student ID',
                 icon: Icons.numbers,
               ),
               const SizedBox(height: 12),
@@ -296,6 +315,54 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 label: 'Parent Mobile',
                 icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+
+              _buildTextField(
+                controller: _guardianMobileController,
+                label: 'Guardian Mobile',
+                icon: Icons.phone_android,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 24),
+
+              _buildSectionHeader('Transport Information'),
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedVanId,
+                  decoration: const InputDecoration(
+                    labelText: 'Assigned Bus/Van',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: InputBorder.none,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('No Van Assigned'),
+                    ),
+                    ..._vansList.map((van) {
+                      return DropdownMenuItem<String>(
+                        value: van['_id'],
+                        child: Text('${van['vehicleNumber']} (${van['driverName']})'),
+                      );
+                    }),
+                  ],
+                  onChanged: (v) => setState(() => _selectedVanId = v),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              _buildTextField(
+                controller: _pickupPointController,
+                label: 'Pickup Point',
+                icon: Icons.location_history,
               ),
 
               const SizedBox(height: 32),

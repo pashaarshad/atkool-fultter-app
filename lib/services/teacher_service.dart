@@ -55,10 +55,14 @@ class TeacherService {
     required String className,
     required String section,
     String? rollNo,
+    String? studentId,
     String? email,
     String? mobileNo,
     String? parentName,
     String? parentMobile,
+    String? guardianMobile,
+    String? vanId,
+    String? pickupPoint,
     String? address,
   }) async {
     try {
@@ -78,10 +82,14 @@ class TeacherService {
           'className': className,
           'section': section,
           'rollNo': rollNo,
+          'studentId': studentId,
           'email': email,
           'mobileNo': mobileNo,
           'parentName': parentName,
           'parentMobile': parentMobile,
+          'guardianMobile': guardianMobile,
+          'vanId': vanId,
+          'pickupPoint': pickupPoint,
           'address': address,
         }),
       );
@@ -94,6 +102,37 @@ class TeacherService {
         return {
           'success': false,
           'message': data['message'] ?? 'Failed to add student',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  // Get school vans list
+  Future<Map<String, dynamic>> getVans() async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/school-vans'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to fetch vans',
         };
       }
     } catch (e) {
