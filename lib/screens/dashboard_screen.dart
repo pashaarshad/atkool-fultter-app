@@ -18,6 +18,12 @@ import 'parent_attendance_screen.dart';
 import 'student_requests_screen.dart';
 import 'parent_fees_screen.dart';
 import 'chat_list_screen.dart';
+import 'parent_datesheets_screen.dart';
+import 'parent_homework_screen.dart';
+import 'parent_report_card_screen.dart';
+import 'parent_timetable_screen.dart';
+import 'parent_notice_board_screen.dart';
+import 'parent_settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -967,6 +973,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icons.chat,
             label: 'Chat with Teacher',
             color: const Color(0xFF007BFF),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentDateSheetsScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.calendar_today,
+            label: 'DateSheets',
+            color: const Color(0xFF8B5CF6),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentHomeworkScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.menu_book,
+            label: 'Homework',
+            color: const Color(0xFFE83E8C),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentReportCardScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.assessment,
+            label: 'Report Card',
+            color: const Color(0xFF17A2B8),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentTimetableScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.table_chart,
+            label: 'Timetable',
+            color: const Color(0xFFFD7E14),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentNoticeBoardScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.campaign,
+            label: 'Notice Board',
+            color: const Color(0xFF6F42C1),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentSettingsScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.settings,
+            label: 'Settings',
+            color: const Color(0xFF6C757D),
           ),
         ),
         const SizedBox(height: 12),
