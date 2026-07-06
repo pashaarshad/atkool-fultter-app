@@ -16,6 +16,8 @@ import 'upcoming_exams_screen.dart';
 import 'notifications_screen.dart';
 import 'parent_attendance_screen.dart';
 import 'student_requests_screen.dart';
+import 'parent_fees_screen.dart';
+import 'chat_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -751,7 +753,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(child: SizedBox()), // Empty placeholder for symmetry
+            Expanded(
+              child: _buildClickableActionTile(
+                icon: Icons.chat,
+                label: 'Chat with\nParents',
+                color: const Color(0xFFE83E8C),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChatListScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ],
@@ -919,6 +935,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icons.fact_check,
             label: 'View Attendance History',
             color: const Color(0xFF28A745),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ParentFeesScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.payment,
+            label: 'Fees & Payments',
+            color: const Color(0xFF6B4EFF),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ChatListScreen(),
+              ),
+            );
+          },
+          child: _buildMenuTile(
+            icon: Icons.chat,
+            label: 'Chat with Teacher',
+            color: const Color(0xFF007BFF),
           ),
         ),
         const SizedBox(height: 12),
