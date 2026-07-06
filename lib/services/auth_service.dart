@@ -60,12 +60,6 @@ class AuthService {
       if (response.statusCode == 200) {
         await _saveSession(data['token'], 'teacher', data);
         return {'success': true, 'data': data};
-      } else if (response.statusCode == 403 && data['deviceLocked'] == true) {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Device locked. Contact admin.',
-          'deviceLocked': true,
-        };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
