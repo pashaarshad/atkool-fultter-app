@@ -35,6 +35,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final _authService = AuthService();
   final _teacherService = TeacherService();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Map<String, dynamic>? _userData;
   String? _userType;
   bool _isLoading = true;
@@ -391,6 +392,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final schoolName = _userData?['school']?['name'] ?? 'School';
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF8F9FA),
       drawer: !isTeacher ? _buildParentDrawer(context) : null,
       body: SafeArea(
@@ -468,23 +470,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: [
           if (!isTeacher) ...[
-            Builder(
-              builder: (innerContext) => GestureDetector(
-                onTap: () {
-                  Scaffold.of(innerContext).openDrawer();
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.menu,
-                    color: Color(0xFF1A1A1A),
-                    size: 24,
-                  ),
+            GestureDetector(
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.menu,
+                  color: Color(0xFF1A1A1A),
+                  size: 24,
                 ),
               ),
             ),
