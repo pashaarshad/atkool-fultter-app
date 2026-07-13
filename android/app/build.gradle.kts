@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.atkool.school"
+    namespace = "com.atkool.portal"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.atkool.school"
+        applicationId = "com.atkool.portal"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

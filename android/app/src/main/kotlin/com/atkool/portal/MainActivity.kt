@@ -1,4 +1,4 @@
-package com.atkool.school
+package com.atkool.portal
 
 import io.flutter.embedding.android.FlutterActivity
 
