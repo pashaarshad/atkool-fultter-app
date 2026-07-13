@@ -394,7 +394,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF8F9FA),
-      drawer: !isTeacher ? _buildParentDrawer(context) : null,
+      drawer: isTeacher ? _buildTeacherDrawer(context) : _buildParentDrawer(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -469,26 +469,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
-          if (!isTeacher) ...[
-            GestureDetector(
-              onTap: () {
-                _scaffoldKey.currentState?.openDrawer();
-              },
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.menu,
-                  color: Color(0xFF1A1A1A),
-                  size: 24,
-                ),
+          GestureDetector(
+            onTap: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.menu,
+                color: Color(0xFF1A1A1A),
+                size: 24,
               ),
             ),
-          ],
+          ),
           // Welcome Text
           Expanded(
             child: Column(
@@ -1481,6 +1479,210 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildTeacherDrawer(BuildContext context) {
+    final name = _userData?['teacher']?['name'] ?? 'Teacher';
+    final schoolName = _userData?['school']?['name'] ?? 'School';
+    
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          // Drawer Header
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(
+              color: Color(0xFF6B4EFF),
+            ),
+            accountName: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            ),
+            accountEmail: Text(
+              schoolName,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                _getInitials(name),
+                style: const TextStyle(
+                  color: Color(0xFF6B4EFF),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          
+          // Drawer Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  icon: Icons.dashboard,
+                  label: 'Overview',
+                  color: const Color(0xFF6B4EFF),
+                  onTap: () => Navigator.pop(context),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.class_,
+                  label: 'My Classes',
+                  color: const Color(0xFF17A2B8),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showClassSwitcher();
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.fact_check,
+                  label: 'Take Attendance',
+                  color: const Color(0xFF28A745),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TakeAttendanceScreen(selectedClass: _selectedClass),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.history,
+                  label: 'Attendance History',
+                  color: const Color(0xFFFD7E14),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AttendanceHistoryScreen(selectedClass: _selectedClass),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.chat,
+                  label: 'Chat',
+                  color: const Color(0xFF007BFF),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ChatListScreen()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.person_add,
+                  label: 'Add Student',
+                  color: const Color(0xFF28A745),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddStudentScreen(classAssignments: _classAssignments),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.pending_actions,
+                  label: 'Student Requests',
+                  color: const Color(0xFF17A2B8),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StudentRequestsScreen(selectedClass: _selectedClass),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.event,
+                  label: 'School Events',
+                  color: const Color(0xFFFF9800),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SchoolEventsScreen()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.assignment,
+                  label: 'Upcoming Exams',
+                  color: const Color(0xFF6B4EFF),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UpcomingExamsScreen()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.time_to_leave,
+                  label: 'Leave Management',
+                  color: const Color(0xFFDC3545),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showWebOnlyFeatureMessage('Leave Management');
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.menu_book,
+                  label: 'Homework',
+                  color: const Color(0xFFE83E8C),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showWebOnlyFeatureMessage('Homework Management');
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.edit_note,
+                  label: 'Marks Entry',
+                  color: const Color(0xFF6F42C1),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showWebOnlyFeatureMessage('Marks Entry');
+                  },
+                ),
+                const Divider(),
+                _buildDrawerItem(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  color: const Color(0xFFDC3545),
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    await _authService.logout();
+                    navigator.pushReplacement(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWebOnlyFeatureMessage(String featureName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$featureName is currently only available on the Web portal.'),
+        backgroundColor: const Color(0xFF6B4EFF),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
