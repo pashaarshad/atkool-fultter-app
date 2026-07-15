@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import '../services/teacher_service.dart';
 
 class AddStudentScreen extends StatefulWidget {
@@ -28,6 +31,53 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   bool _isLoading = false;
   List<dynamic> _vansList = [];
   String? _selectedVanId;
+  Uint8List? _photoBytes;
+  String? _photoBase64;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await showModalBottomSheet<XFile?>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () async {
+                final file = await picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 50,
+                  maxWidth: 800,
+                );
+                if (context.mounted) Navigator.pop(context, file);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () async {
+                final file = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 50,
+                  maxWidth: 800,
+                );
+                if (context.mounted) Navigator.pop(context, file);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _photoBytes = bytes;
+        _photoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -96,6 +146,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       vanId: _selectedVanId,
       pickupPoint: _pickupPointController.text.trim(),
       address: _addressController.text.trim(),
+      photo: _photoBase64,
     );
 
     setState(() => _isLoading = false);
@@ -365,40 +416,142 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 icon: Icons.location_history,
               ),
 
+              const SizedBox(height: 24),
+              _buildSectionHeader('Student Photo'),
+              const SizedBox(height: 12),
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: _photoBytes == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, color: Colors.grey[400], size: 40),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Tap to upload',
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          )
+                        : Stack(
+                            children: [
+                              Positioned.fill(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.memory(
+                                    _photoBytes!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _photoBytes = null;
+                                      _photoBase64 = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 32),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _addStudent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6B4EFF),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+              // Submit and Cancel Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 54,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF6B4EFF), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        )
-                      : const Text(
-                          'ADD STUDENT',
+                        ),
+                        child: const Text(
+                          'CANCEL',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
+                            color: Color(0xFF6B4EFF),
                           ),
                         ),
-                ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _addStudent,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6B4EFF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'ADD STUDENT',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

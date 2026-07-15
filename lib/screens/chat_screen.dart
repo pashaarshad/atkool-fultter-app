@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import '../services/chat_service.dart';
+import '../services/auth_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String targetId; // studentId for teacher, teacherId for parent
@@ -26,6 +27,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _chatService = ChatService();
+  final _authService = AuthService();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _imagePicker = ImagePicker();
@@ -34,16 +36,27 @@ class _ChatScreenState extends State<ChatScreen> {
   List<dynamic> _messages = [];
   Timer? _pollTimer;
   bool _isSending = false;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUserId();
     _loadMessages();
     
     // Poll for new messages every 5 seconds
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _loadMessages(silent: true);
     });
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final uid = await _authService.getCurrentUserId();
+    if (mounted) {
+      setState(() {
+        _currentUserId = uid;
+      });
+    }
   }
 
   @override
@@ -59,12 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _isLoading = true);
     }
 
-    Map<String, dynamic> result;
-    if (widget.userType == 'teacher') {
-      result = await _chatService.getTeacherMessages(widget.targetId);
-    } else {
-      result = await _chatService.getParentMessages(widget.targetId);
-    }
+    final result = await _chatService.getUniversalMessages(widget.targetId);
 
     if (mounted) {
       setState(() {
@@ -99,20 +107,11 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
     setState(() => _isSending = true);
 
-    Map<String, dynamic> result;
-    if (widget.userType == 'teacher') {
-      result = await _chatService.sendTeacherMessage(
-        studentId: widget.targetId,
-        message: text,
-        messageType: 'text',
-      );
-    } else {
-      result = await _chatService.sendParentMessage(
-        teacherId: widget.targetId,
-        message: text,
-        messageType: 'text',
-      );
-    }
+    final result = await _chatService.sendUniversalMessage(
+      receiverId: widget.targetId,
+      message: text,
+      messageType: 'text',
+    );
 
     if (mounted) {
       setState(() => _isSending = false);
@@ -181,20 +180,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _uploadAttachment(String base64Data, String messageType) async {
     setState(() => _isSending = true);
 
-    Map<String, dynamic> result;
-    if (widget.userType == 'teacher') {
-      result = await _chatService.sendTeacherMessage(
-        studentId: widget.targetId,
-        message: base64Data,
-        messageType: messageType,
-      );
-    } else {
-      result = await _chatService.sendParentMessage(
-        teacherId: widget.targetId,
-        message: base64Data,
-        messageType: messageType,
-      );
-    }
+    final result = await _chatService.sendUniversalMessage(
+      receiverId: widget.targetId,
+      message: base64Data,
+      messageType: messageType,
+    );
 
     if (mounted) {
       setState(() => _isSending = false);
@@ -447,7 +437,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(dynamic msg) {
-    final isMe = msg['senderType'] == widget.userType;
+    final isMe = (msg['senderId'] != null && _currentUserId != null)
+        ? msg['senderId'].toString() == _currentUserId
+        : msg['senderType'] == widget.userType;
     final timeStr = msg['createdAt'] != null
         ? DateTime.parse(msg['createdAt'].toString()).toLocal().toString().split(' ')[1].substring(0, 5)
         : '';

@@ -64,6 +64,7 @@ class TeacherService {
     String? vanId,
     String? pickupPoint,
     String? address,
+    String? photo,
   }) async {
     try {
       final token = await _getToken();
@@ -91,6 +92,7 @@ class TeacherService {
           'vanId': vanId,
           'pickupPoint': pickupPoint,
           'address': address,
+          'photo': photo,
         }),
       );
 

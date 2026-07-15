@@ -49,12 +49,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       setState(() => _isLoading = true);
     }
 
-    Map<String, dynamic> result;
-    if (_userType == 'teacher') {
-      result = await _chatService.getTeacherConversations();
-    } else {
-      result = await _chatService.getParentConversations();
-    }
+    final result = await _chatService.getUniversalConversations();
 
     if (mounted) {
       setState(() {
@@ -73,6 +68,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return name[0].toUpperCase();
+  }
+
+  void _showContactsSearch() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const ContactsSearchBottomSheet(),
+    ).then((_) => _loadConversations());
   }
 
   @override
@@ -113,6 +117,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     },
                   ),
                 ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showContactsSearch,
+        backgroundColor: const Color(0xFF6B4EFF),
+        child: const Icon(Icons.message, color: Colors.white),
+      ),
     );
   }
 
@@ -136,37 +145,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           const SizedBox(height: 8),
           const Text('Your conversation history will appear here', style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _showContactsSearch,
+            icon: const Icon(Icons.search, color: Colors.white),
+            label: const Text('SEARCH CONTACTS', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6B4EFF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildConversationCard(dynamic conv) {
-    final isTeacherRole = _userType == 'teacher';
-    
-    // Recipient Details
-    final String name = isTeacherRole 
-        ? (conv['student']?['name'] ?? 'Student')
-        : (conv['teacher']?['name'] ?? 'Teacher');
+    final partner = conv['partner'];
+    final String name = partner?['name'] ?? 'User';
+    final String subtitleLabel = partner?['details'] ?? '';
         
-    final String subtitleLabel = isTeacherRole
-        ? 'Parent: ${conv['student']?['parentName'] ?? 'N/A'} • Class ${conv['student']?['className'] ?? ''}'
-        : (conv['teacher']?['subject'] != null 
-            ? '${conv['teacher']?['subject']} Teacher' 
-            : 'Class Teacher');
-
     // Last Message Preview
     final lastMsg = conv['lastMessage'];
     String lastMsgText = 'No messages yet';
     if (lastMsg != null) {
-      final prefix = lastMsg['senderType'] == _userType ? 'You: ' : '';
       if (lastMsg['messageType'] == 'image') {
-        lastMsgText = '$prefix📷 Sent an image';
+        lastMsgText = '📷 Sent an image';
       } else if (lastMsg['messageType'] == 'file') {
-        lastMsgText = '$prefix📄 Sent a document';
+        lastMsgText = '📄 Sent a document';
       } else {
         final rawMsg = lastMsg['message'] ?? '';
-        lastMsgText = prefix + (rawMsg.length > 35 ? '${rawMsg.substring(0, 35)}...' : rawMsg);
+        lastMsgText = rawMsg.length > 35 ? '${rawMsg.substring(0, 35)}...' : rawMsg;
       }
     }
 
@@ -227,9 +237,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               )
             : const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: () {
-          final String targetId = isTeacherRole 
-              ? (conv['student']?['_id'] ?? '')
-              : (conv['teacher']?['_id'] ?? '');
+          final String targetId = partner?['id'] ?? '';
 
           Navigator.push(
             context,
@@ -242,6 +250,221 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
           ).then((_) => _loadConversations());
         },
+      ),
+    );
+  }
+}
+
+// Contacts Search Bottom Sheet
+class ContactsSearchBottomSheet extends StatefulWidget {
+  const ContactsSearchBottomSheet({super.key});
+
+  @override
+  State<ContactsSearchBottomSheet> createState() => _ContactsSearchBottomSheetState();
+}
+
+class _ContactsSearchBottomSheetState extends State<ContactsSearchBottomSheet> {
+  final _chatService = ChatService();
+  final _authService = AuthService();
+  final _searchController = TextEditingController();
+  
+  bool _isLoading = true;
+  List<dynamic> _contacts = [];
+  List<dynamic> _filteredContacts = [];
+  String _userType = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContacts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadContacts() async {
+    final type = await _authService.getUserType();
+    final result = await _chatService.getUniversalContacts();
+    setState(() {
+      _userType = type ?? '';
+      _isLoading = false;
+      if (result['success']) {
+        _contacts = result['data'] ?? [];
+        _filteredContacts = _contacts;
+      }
+    });
+  }
+
+  void _filterContacts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredContacts = _contacts;
+      } else {
+        _filteredContacts = _contacts.where((c) {
+          final name = (c['name'] ?? '').toString().toLowerCase();
+          final details = (c['details'] ?? '').toString().toLowerCase();
+          final type = (c['type'] ?? '').toString().toLowerCase();
+          final q = query.toLowerCase();
+          return name.contains(q) || details.contains(q) || type.contains(q);
+        }).toList();
+      }
+    });
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'New Chat',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterContacts,
+              style: const TextStyle(color: Color(0xFF1A1A1A)),
+              decoration: InputDecoration(
+                hintText: 'Search contacts...',
+                hintStyle: const TextStyle(color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Contacts List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF6B4EFF)))
+                : _filteredContacts.isEmpty
+                    ? const Center(child: Text('No contacts found'))
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: _filteredContacts.length,
+                        separatorBuilder: (c, i) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final c = _filteredContacts[index];
+                          final name = c['name'] ?? '';
+                          final details = c['details'] ?? '';
+                          final type = c['type'] ?? 'student';
+                          
+                          return ListTile(
+                            leading: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: type == 'teacher'
+                                    ? const Color(0xFF6B4EFF).withAlpha(30)
+                                    : const Color(0xFF28A745).withAlpha(30),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getInitials(name),
+                                  style: TextStyle(
+                                    color: type == 'teacher'
+                                        ? const Color(0xFF6B4EFF)
+                                        : const Color(0xFF28A745),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                            subtitle: Text(details, style: const TextStyle(fontSize: 12)),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: type == 'teacher'
+                                    ? const Color(0xFF6B4EFF).withAlpha(20)
+                                    : const Color(0xFF28A745).withAlpha(20),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                type.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: type == 'teacher'
+                                      ? const Color(0xFF6B4EFF)
+                                      : const Color(0xFF28A745),
+                                ),
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatScreen(
+                                    targetId: c['id'] ?? '',
+                                    recipientName: name,
+                                    userType: _userType,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }

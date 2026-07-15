@@ -139,6 +139,18 @@ class AuthService {
     return null;
   }
 
+  // Get current user's ID
+  Future<String?> getCurrentUserId() async {
+    final userData = await getUserData();
+    if (userData == null) return null;
+    final userType = await getUserType();
+    if (userType == 'teacher') {
+      return userData['teacher']?['_id'] ?? userData['_id'];
+    } else {
+      return userData['student']?['_id'] ?? userData['_id'];
+    }
+  }
+
   // Logout
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();

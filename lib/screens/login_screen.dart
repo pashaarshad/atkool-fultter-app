@@ -217,10 +217,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _identifierController,
                         style: const TextStyle(color: Color(0xFF1A1A1A)),
                         decoration: InputDecoration(
-                          labelText: _isTeacher ? 'Email' : 'Username',
+                          labelText: _isTeacher ? 'Email or Phone Number' : 'Username, Phone, or Email',
                           labelStyle: const TextStyle(color: Colors.grey),
                           prefixIcon: Icon(
-                            _isTeacher ? Icons.email : Icons.person,
+                            _isTeacher ? Icons.phone_android : Icons.person_outline,
                             color: Colors.grey,
                           ),
                           filled: true,

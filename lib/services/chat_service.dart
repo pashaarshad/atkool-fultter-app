@@ -172,4 +172,110 @@ class ChatService {
       return {'success': false, 'message': 'Connection error'};
     }
   }
+
+  // --- UNIVERSAL CHAT ---
+  Future<Map<String, dynamic>> getUniversalContacts() async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/chat/universal/contacts'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data['data'] ?? []};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed to load contacts'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getUniversalConversations() async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/chat/universal/conversations'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data['data'] ?? []};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed to load conversations'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getUniversalMessages(String partnerId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/chat/universal/messages/$partnerId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data['data'] ?? []};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed to load messages'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  Future<Map<String, dynamic>> sendUniversalMessage({
+    required String receiverId,
+    required String message,
+    required String messageType,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/chat/universal/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'receiverId': receiverId,
+          'message': message,
+          'messageType': messageType,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'data': data['data']};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed to send message'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
 }
