@@ -17,7 +17,10 @@ import 'notifications_screen.dart';
 import 'parent_attendance_screen.dart';
 import 'student_requests_screen.dart';
 import 'parent_fees_screen.dart';
+import 'dart:async';
 import 'chat_list_screen.dart';
+import 'chat_screen.dart';
+import '../services/chat_service.dart';
 import 'parent_datesheets_screen.dart';
 import 'parent_homework_screen.dart';
 import 'parent_report_card_screen.dart';
@@ -51,6 +54,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _chatPollTimer?.cancel();
+    _currentChatOverlay?.remove();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -103,6 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _studentCount = studentCount;
       _isLoading = false;
     });
+    _startChatNotificationPolling();
   }
 
   Future<bool> _checkSubscription() async {
@@ -1684,5 +1695,176 @@ class _DashboardScreenState extends State<DashboardScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Timer? _chatPollTimer;
+  List<dynamic> _dashboardConversations = [];
+  OverlayEntry? _currentChatOverlay;
+
+  void _startChatNotificationPolling() async {
+    final currentUserId = await _authService.getCurrentUserId();
+    if (currentUserId == null) return;
+
+    final chatService = ChatService();
+    final initialResult = await chatService.getUniversalConversations();
+    if (initialResult['success']) {
+      _dashboardConversations = initialResult['data'] ?? [];
+    }
+
+    _chatPollTimer?.cancel();
+    _chatPollTimer = Timer.periodic(const Duration(seconds: 8), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final result = await chatService.getUniversalConversations();
+      if (!mounted) return;
+
+      if (result['success']) {
+        final newConversations = result['data'] ?? [];
+        
+        if (_dashboardConversations.isNotEmpty) {
+          for (var newConv in newConversations) {
+            final partner = newConv['partner'];
+            final partnerId = partner?['id'] ?? '';
+            final partnerName = partner?['name'] ?? 'User';
+            final lastMsg = newConv['lastMessage'];
+            final unreadCount = newConv['unreadCount'] ?? 0;
+
+            if (lastMsg != null && unreadCount > 0) {
+              final oldConv = _dashboardConversations.firstWhere(
+                (c) => c['partner']?['id'] == partnerId,
+                orElse: () => null,
+              );
+
+              bool isNewMessage = false;
+              if (oldConv == null) {
+                isNewMessage = true;
+              } else {
+                final oldLastMsg = oldConv['lastMessage'];
+                final oldUnread = oldConv['unreadCount'] ?? 0;
+                if (oldLastMsg == null || (lastMsg['id'] != oldLastMsg['id'] && unreadCount > oldUnread)) {
+                  isNewMessage = true;
+                }
+              }
+
+              if (isNewMessage && lastMsg['senderId'] != currentUserId) {
+                String previewText = '';
+                if (lastMsg['messageType'] == 'image') {
+                  previewText = '📷 Sent an image';
+                } else if (lastMsg['messageType'] == 'file') {
+                  previewText = '📄 Sent a document';
+                } else {
+                  previewText = lastMsg['message'] ?? '';
+                }
+
+                _showChatNotificationOverlay(partnerName, previewText, partnerId);
+              }
+            }
+          }
+        }
+        
+        _dashboardConversations = newConversations;
+      }
+    });
+  }
+
+  void _showChatNotificationOverlay(String senderName, String messageText, String partnerId) {
+    if (!mounted) return;
+
+    _currentChatOverlay?.remove();
+    _currentChatOverlay = null;
+
+    _currentChatOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 10,
+        right: 10,
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: () {
+              _currentChatOverlay?.remove();
+              _currentChatOverlay = null;
+              
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    targetId: partnerId,
+                    recipientName: senderName,
+                    userType: _userType ?? 'parent',
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(20),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(color: const Color(0xFF6B4EFF).withAlpha(30), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6B4EFF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          senderName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A1A1A)),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          messageText,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_currentChatOverlay!);
+
+    Timer(const Duration(seconds: 4), () {
+      if (_currentChatOverlay != null && _currentChatOverlay!.mounted) {
+        _currentChatOverlay?.remove();
+        _currentChatOverlay = null;
+      }
+    });
   }
 }

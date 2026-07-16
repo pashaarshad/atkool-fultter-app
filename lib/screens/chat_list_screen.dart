@@ -18,6 +18,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
   String _userType = '';
   List<dynamic> _conversations = [];
   Timer? _pollTimer;
+  String? _currentUserId;
+  OverlayEntry? _currentOverlay;
 
   @override
   void initState() {
@@ -28,13 +30,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _currentOverlay?.remove();
     super.dispose();
   }
 
   Future<void> _initChatList() async {
     final userType = await _authService.getUserType();
+    final currentUserId = await _authService.getCurrentUserId();
     setState(() {
       _userType = userType ?? '';
+      _currentUserId = currentUserId;
     });
     await _loadConversations();
     
@@ -52,12 +57,58 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final result = await _chatService.getUniversalConversations();
 
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (result['success']) {
-          _conversations = result['data'] ?? [];
+      if (result['success']) {
+        final newConversations = result['data'] ?? [];
+        if (silent && _conversations.isNotEmpty && _currentUserId != null) {
+          for (var newConv in newConversations) {
+            final partner = newConv['partner'];
+            final partnerId = partner?['id'] ?? '';
+            final partnerName = partner?['name'] ?? 'User';
+            final lastMsg = newConv['lastMessage'];
+            final unreadCount = newConv['unreadCount'] ?? 0;
+
+            if (lastMsg != null && unreadCount > 0) {
+              final oldConv = _conversations.firstWhere(
+                (c) => c['partner']?['id'] == partnerId,
+                orElse: () => null,
+              );
+
+              bool isNewMessage = false;
+              if (oldConv == null) {
+                isNewMessage = true;
+              } else {
+                final oldLastMsg = oldConv['lastMessage'];
+                final oldUnread = oldConv['unreadCount'] ?? 0;
+                if (oldLastMsg == null || (lastMsg['id'] != oldLastMsg['id'] && unreadCount > oldUnread)) {
+                  isNewMessage = true;
+                }
+              }
+
+              if (isNewMessage && lastMsg['senderId'] != _currentUserId) {
+                String previewText = '';
+                if (lastMsg['messageType'] == 'image') {
+                  previewText = '📷 Sent an image';
+                } else if (lastMsg['messageType'] == 'file') {
+                  previewText = '📄 Sent a document';
+                } else {
+                  previewText = lastMsg['message'] ?? '';
+                }
+
+                _showNotificationOverlay(partnerName, previewText, partnerId);
+              }
+            }
+          }
         }
-      });
+
+        setState(() {
+          _isLoading = false;
+          _conversations = newConversations;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -252,6 +303,104 @@ class _ChatListScreenState extends State<ChatListScreen> {
         },
       ),
     );
+  }
+
+  void _showNotificationOverlay(String senderName, String messageText, String partnerId) {
+    if (!mounted) return;
+
+    _currentOverlay?.remove();
+    _currentOverlay = null;
+
+    _currentOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 10,
+        right: 10,
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: () {
+              _currentOverlay?.remove();
+              _currentOverlay = null;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    targetId: partnerId,
+                    recipientName: senderName,
+                    userType: _userType,
+                  ),
+                ),
+              ).then((_) => _loadConversations());
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(20),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(color: const Color(0xFF6B4EFF).withAlpha(30), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6B4EFF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          senderName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A1A1A)),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          messageText,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_currentOverlay!);
+
+    Timer(const Duration(seconds: 4), () {
+      if (_currentOverlay != null && _currentOverlay!.mounted) {
+        _currentOverlay?.remove();
+        _currentOverlay = null;
+      }
+    });
   }
 }
 
